@@ -21,7 +21,7 @@ A = scsearch(keyword="base_96",unique=True,verbose=True)
 y = gwylm( scentry_obj = A[0], lm=[2,1], dt=0.4, verbose=True )
 
 # # Plot time domain strain
-# y.plot(kind='strain')
+#y.plot(kind='strain', show=True)
 
 # plot time domain psi4
 y.plot(kind='psi4',show=True)

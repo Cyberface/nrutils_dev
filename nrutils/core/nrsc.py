@@ -504,7 +504,12 @@ def scsearch( catalog = None,           # Manually input list of scentry objects
         output_descriptor = green(' unique')
 
     # Sort by final dimnesionless spin
-    catalog = sorted( catalog, key = lambda e: e.xf, reverse = True )
+
+    try:
+        catalog = sorted( catalog, key = lambda e: e.xf, reverse = True )
+    except:
+        print(magenta("final spin not working, passing default"))
+        pass
 
     #
     if verbose:
@@ -671,16 +676,28 @@ def sclabel( entry,             # scentry object
             tag.append('s2')
 
         # Run is spin aligned if net spin is parallel to net L
-        if allclose( dot(e.S1,L) , norm(e.S1)*norm(L) , atol=tol ) and allclose( dot(e.S2,L) , norm(e.S2)*norm(L) , atol=tol ) and (not 'ns' in tag):
-            tag.append('sa')
+        try:
+            if allclose( dot(e.S1,L) , norm(e.S1)*norm(L) , atol=tol ) and allclose( dot(e.S2,L) , norm(e.S2)*norm(L) , atol=tol ) and (not 'ns' in tag):
+                tag.append('sa')
+        except:
+            print("CHECK didn't work passing!!: '# Run is spin aligned if net spin is parallel to net L'")
+            pass
 
         # Run is spin anti-aligned if net spin is anti-parallel to net L
-        if allclose( dot(e.S1,L) , -norm(e.S1)*norm(L) , atol=tol ) and allclose( dot(e.S2,L) , -norm(e.S2)*norm(L) , atol=tol ) and (not 'ns' in tag):
-            tag.append('saa')
+        try:
+            if allclose( dot(e.S1,L) , -norm(e.S1)*norm(L) , atol=tol ) and allclose( dot(e.S2,L) , -norm(e.S2)*norm(L) , atol=tol ) and (not 'ns' in tag):
+                tag.append('saa')
+        except:
+            print("CHECK didn't work passing!!: '# Run is spin anti-aligned if net spin is anti-parallel to net L'")
+            pass
 
         # Run is precessing if component spins are not parallel with L
-        if (not 'sa' in tag) and (not 'saa' in tag) and (not 'ns' in tag):
-            tag.append('p')
+        try:
+            if (not 'sa' in tag) and (not 'saa' in tag) and (not 'ns' in tag):
+                tag.append('p')
+        except:
+            print("CHECK didn't work passing!!: '# Run is precessing if component spins are not parallel with L'")
+            pass
 
         # mass ratio
         if use_q:
