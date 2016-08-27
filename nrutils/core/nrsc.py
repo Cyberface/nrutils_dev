@@ -107,7 +107,8 @@ class scconfig(smart_object):
         for attr in this.__dict__:
             if 'dir' in attr:
                 if this.__dict__[attr][-1] != '/':
-                    this.__dict__[attr] += '/'
+                    # this.__dict__[attr] += '/'
+                    this.__dict__[attr][-1] += '/'
         # Make sure that user symbols (~) are expanded
         for attr in this.__dict__:
             if ('dir' in attr) or ('location' in attr):
