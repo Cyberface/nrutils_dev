@@ -61,7 +61,7 @@ if len(internal_packages) == 0:
 
 # Store package settings (useful directories etc) to a settings field
 # __pathsfile__ = [dirname(realpath(__file__))+'/settings/paths.ini']
-# this caused an error so had to hardcode the path
+# this caused an error so had to hardcode the path if you are not in the nrutils directory when loading python
 __pathsfile__ = ['/Users/sebastian/git/nrutils_dev/nrutils/settings/paths.ini']
 
 #
