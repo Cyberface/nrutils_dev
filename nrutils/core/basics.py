@@ -15,9 +15,10 @@ import random
 import h5py
 import copy
 
-from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-rc('text', usetex=True)
+# from matplotlib import rc
+# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# NOTE that uncommenting the line below may cause errors in OSX install relating to fonts
+# rc('text', usetex=True)
 
 def linenum():
     """Returns the current line number in our program."""
@@ -883,6 +884,17 @@ def rfind( path , pattern = None, verbose = False, ignore = None ):
     # Create a string with the current process name
     thisfun = inspect.stack()[0][3]
 
+    # # Use find with regex to get matches
+    # from subprocess import Popen, PIPE
+    # (stdout, stderr) = Popen(['find',path,'-regex','.*/[^/]*%s*'%(pattern)], stdout=PIPE).communicate()
+    #
+    # if 'None' is stderr:
+    #     raise ValueError( 'Unable to find files matching '+red(pattern)+' in '+red(path)+'. The system says '+red(stderr) )
+    #
+    # #
+    # matches = stdout.split('\n')
+
+
     # All items containing these string will be ignored
     if ignore is None:
         ignore = ['.git','.svn']
@@ -1326,3 +1338,30 @@ def tshift( t,      # time sries of data
 
     #
     return h_
+
+#
+def pnw0(m1,m2,D=10.0):
+    # https://arxiv.org/pdf/1310.1528v4.pdf
+    # Equation 228
+    # 2nd Reference: arxiv:0710.0614v1
+    # NOTE: this outputs orbital frequency
+    from numpy import sqrt,zeros,pi,array,sum
+    #
+    G = 1.0
+    c = 1.0
+    r = float(D)
+    M = float( m1+m2 )
+    v = m1*m2/( M**2 )
+    gamma = G*M/(r*c*c)     # Eqn. 225
+    #
+    trm = zeros((4,))
+    #
+    trm[0] = 1.0
+    trm[1] = v - 3.0
+    trm[2] = 6 + v*41.0/4.0 + v*v
+    trm[3] = -10.0 + v*( -75707.0/840.0 + pi*pi*41.0/64.0 ) + 19.0*0.5*v*v + v*v*v
+    #
+    w0 = sqrt( (G*M/(r*r*r)) * sum( array([ term*(gamma**k) for k,term in enumerate(trm) ]) ) )
+
+    #
+    return w0

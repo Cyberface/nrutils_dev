@@ -125,6 +125,9 @@ class scentry:
     # Create scentry object given location of metadata file
     def __init__( this, config_obj, metadata_file_location ):
 
+        # Keep an internal log for each scentry created
+        this.log = '[Log for %s] The file is "%s".' % (this,metadata_file_location)
+
         # Store primary inputs as object attributes
         this.config = config_obj
         this.metadata_file_location = metadata_file_location
@@ -134,18 +137,22 @@ class scentry:
 
         # If valid, learn metadata. Note that metadata property are defined as none otherise. Also NOTE that the standard metadata is stored directly to this object's attributes.
         this.raw_metadata = None
-        if this.is_valid:
-
+        if this.is_valid is True:
             #
             print '## Working: %s' % cyan(metadata_file_location)
+            this.log += ' This entry''s metadata file is valid.'
 
             # i.e. learn the meta_data_file
-            this.learn_metadata()
-
+            try:
+                this.learn_metadata()
+            except NameError:
+                this.log += ' [FATALERROR-1] The metadata failed to be read. There may be an external formatting inconsistency. It is being marked as invalid with None.'
+                this.is_valid = None # An external program may use this to do something
             #
             this.label = sclabel( this )
-        else:
+        elif this.is_valid is False:
             print '## The following is '+red('invalid')+': %s' % cyan(metadata_file_location)
+            this.log += ' This entry''s metadta file is invalid.'
 
     #
     def validate(this):
@@ -295,6 +302,7 @@ def scbuild(save=True):
     from os.path import realpath, abspath, join, splitext, basename
     from os import pardir,system,popen
     import pickle
+
     # Create a string with the current process name
     thisfun = inspect.stack()[0][3]
 
@@ -312,20 +320,34 @@ def scbuild(save=True):
     # For earch config
     for config in configs:
 
+        # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+        # Create streaming log file        #
+        logfstr = gconfig.database_path + '/' + splitext(basename(config.config_file_location))[0] + '.log'
+        msg = 'Opening log file in: '+cyan(logfstr)
+        alert(msg,thisfun)
+        logfid = open(logfstr, 'w')
+        # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% #
+
         # Search recurssively within the config's catalog_dir for files matching the config's metadata_id
         msg = 'Searching for %s in %s.' % ( cyan(config.metadata_id), cyan(config.catalog_dir) ) + yellow(' This may take a long time if the folder being searched is mounted from a remote drive.')
         alert(msg,thisfun)
         mdfile_list = rfind(config.catalog_dir,config.metadata_id,verbose=True)
         alert('done.',thisfun)
 
-
         # (try to) Create a catalog entry for each valid metadata file
         config.catalog = []
+        h = -1
         for mdfile in mdfile_list:
+
             # Create tempoary scentry object
             entry = scentry(config,mdfile)
+
+            # Write to the master log file
+            h+=1
+            logfid.write( '%5i\t%s\n'% (h,entry.log) )
+
             # If the obj is valid, add it to the catalog list, else ignore
-            if entry.is_valid :
+            if entry.is_valid:
                 config.catalog.append( entry )
             else:
                 del entry
@@ -335,6 +357,9 @@ def scbuild(save=True):
             db = gconfig.database_path + '/' + splitext(basename(config.config_file_location))[0] + '.' + gconfig.database_ext
             with open(db, 'wb') as dbf:
                 pickle.dump( config.catalog , dbf, pickle.HIGHEST_PROTOCOL )
+
+        # Close the log file
+        logfid.close()
 
 
 
@@ -1059,8 +1084,8 @@ class gwf:
         # Ignore renderer warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            # tight_layout(pad=2, w_pad=1.2)
-            # subplots_adjust(hspace = .001)
+            tight_layout(pad=2, w_pad=1.2)
+            subplots_adjust(hspace = .001)
 
         #
         xlabel(r'$f$',fontsize=fs,color=txclr)
@@ -1121,8 +1146,8 @@ class gwf:
         # Ignore renderer warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            # tight_layout(pad=2, w_pad=1.2)
-            # subplots_adjust(hspace = .001)
+            tight_layout(pad=2, w_pad=1.2)
+            subplots_adjust(hspace = .001)
 
         #
         pylim( this.t, this.amp, domain=xlim, symmetric=True )
@@ -1300,9 +1325,10 @@ class gwylm:
 
         # If w22 is input, then use the input value for strain calculation. Otherwise, use the algorithmic estimate.
         if w22 is None:
-            w22 = this.wstart
+            w22 = this.wstart_pn
             if verbose:
-                msg = 'Using w22 from '+bold(magenta('algorithmic estimate'))+' to calculate strain multipoles.'
+                # msg = 'Using w22 from '+bold(magenta('algorithmic estimate'))+' to calculate strain multipoles.'
+                msg = 'Using w22 from a '+bold(magenta('PN estimate'))+' to calculate strain multipoles [see pnw0 in basics.py, and/or arxiv:1310.1528v4].'
                 alert(msg,thisfun)
         else:
             if verbose:
@@ -1434,6 +1460,9 @@ class gwylm:
 
         # Construct the string location of the waveform data. NOTE that config is inhereted indirectly from the scentry_obj. See notes in the constructor.
         if file_location is None: # Find file_location automatically. Else, it must be input
+
+            # file_location = this.config.make_datafilename( extraction_parameter, l,m )
+
             # For all formatting possibilities in the configuration file
             for fmt in this.config.data_file_name_format :
                 #
@@ -1543,7 +1572,7 @@ class gwylm:
 
             # Plot waveform data
             for y in wflm:
-                ax = y.plot(fig=fig,title='%s: %s' % (this.setname.replace('_','\_'),this.label.replace('_','\_')),kind=kind,domain=domain)
+                ax = y.plot(fig=fig,title='%s: %s' % (this.setname,this.label),kind=kind,domain=domain)
 
             # If there is start characterization, plot some of it
             if 'starting' in this.__dict__:
@@ -1580,7 +1609,10 @@ class gwylm:
 
         # If there is no w22 given, then use the internally defined value of wstart
         if w22 is None:
-            w22 = this.wstart
+            # w22 = this.wstart
+            # NOTE: here we choose to use the ORBITAL FREQUENCY as a lower bound for the l=m=2 mode.
+            w22 = this.wstart_pn
+
 
         # Reset
         this.hlm = []
@@ -1620,6 +1652,9 @@ class gwylm:
         # store the expected min frequency in the waveform to this object as:
         this.wstart = this.starting.left_dphi
         this.startindex = this.starting.left_index
+        # Estimate the smallest orbital frequency relevant for this waveform using a PN formula.
+        safety_factor = 0.95
+        this.wstart_pn = safety_factor*2.0*pnw0(this.m1,this.m2,this.b)
 
     # Clean the time domain waveform by removing junk radiation.
     def clean( this, method=None, crop_time=None ):
