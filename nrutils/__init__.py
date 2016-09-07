@@ -56,9 +56,8 @@ if len(internal_packages) == 0:
     raise ValueError(msg)
 
 # Store package settings (useful directories etc) to a settings field
-# __pathsfile__ = [dirname(realpath(__file__))+'/settings/paths.ini']
-# __pathsfile__ = [dirname(realpath(__file__))+'/settings/paths.ini']
-__pathsfile__ = ['/Users/sebastian/git/nrutils_dev/nrutils/settings/paths.ini']
+__pathsfile__ = [dirname(realpath(__file__))+'/settings/paths.ini']
+# __pathsfile__ = ['/Users/sebastian/git/nrutils_dev/nrutils/settings/paths.ini']
 
 #
 __all__ = internal_packages

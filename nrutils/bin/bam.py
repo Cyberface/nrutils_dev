@@ -30,6 +30,28 @@ def validate( metadata_file_location, config = None ):
     a = basename(metadata_file_location).split(config.metadata_id)[0]
     b = parent(metadata_file_location)
     status = status and (  a in b  )
+    # this checks that we get the correct .bbh file.
+    # next we perform a check that the metadata contains numbers and not
+    # mathematica errors such as 'BBHReduce`Private`content$28444'
+
+    # Here is status is True then we have found the correct .bbh file.
+    # This .bbh file should then have the metadata that we want i.e. masses etc.
+    # Here we can then check that the values in the fields are in fact floats.
+    # If we don't perform this check then errors can occur for instance
+    # when we multiple the puncutre data by the masses to get momentum
+    if status is True:
+        raw_metadata = smart_object( metadata_file_location )
+        # shortand
+        y = raw_metadata
+
+        # Check that inital mass1 is float
+        if not isinstance( y.mass1 , float ) and not isinstance( y.mass2 , float ):
+            msg = 'This is a valid .bbh file however mass1 and mass2 are not floats!' + \
+            ' This is therefore invalid and is being skipped. Setting status to False.'
+            print( red(msg) )
+            status = False
+    else:
+        pass
 
     #
     return status
@@ -41,6 +63,42 @@ def learn_metadata( metadata_file_location ):
     raw_metadata = smart_object( metadata_file_location )
     # shortand
     y = raw_metadata
+
+    # check that the metadata contain the required attributes and
+    # that they are floats. If not then set them to -1.
+    required_attrs = [ 'mass1',
+                       'mass2',
+                       'initial_bh_momentum1x',
+                       'initial_bh_momentum1y',
+                       'initial_bh_momentum1z',
+                       'initial_bh_momentum2x',
+                       'initial_bh_momentum2y',
+                       'initial_bh_momentum2z',
+                       'initial_bh_spin1x',
+                       'initial_bh_spin1y',
+                       'initial_bh_spin1z',
+                       'initial_bh_spin2x',
+                       'initial_bh_spin2y',
+                       'initial_bh_spin2z',
+                       'after_junkradiation_spin1x',
+                       'after_junkradiation_spin1y',
+                       'after_junkradiation_spin1z',
+                       'after_junkradiation_spin2x',
+                       'after_junkradiation_spin2y',
+                       'after_junkradiation_spin2z',
+                       'initial_ADM_energy'
+    ]
+
+    for attr in required_attrs:
+        if isinstance( getattr( y, attr ), ( float, int) ) is True:
+            pass
+        else:
+            print( red( "{0} is not a float or int, setting value to -1".format( attr ) ) )
+            setattr( y, attr, -1. )
+
+
+
+
 
     # # Useful for debuggin -- show what's in y
     # y.show()
@@ -94,6 +152,9 @@ def learn_metadata( metadata_file_location ):
 
     R1 = array( [  puncture_data_1[0,0],puncture_data_1[0,1],puncture_data_1[0,2],  ] )
     R2 = array( [  puncture_data_2[0,0],puncture_data_2[0,1],puncture_data_2[0,2],  ] )
+
+    # print x.m1
+    # print puncture_data_1
 
     P1 = x.m1 * array( [  puncture_data_1[0,3],puncture_data_1[0,4],puncture_data_1[0,5],  ] )
     P2 = x.m2 * array( [  puncture_data_2[0,3],puncture_data_2[0,4],puncture_data_2[0,5],  ] )
@@ -153,8 +214,12 @@ def learn_metadata( metadata_file_location ):
         spin_status = False
     # Estimate final mass and spin
     if mass_status and spin_status:
-        Sf = spin_data[-1,1:]
-        irrMf = irr_mass_data[-1,1]
+        try:
+            Sf = spin_data[-1,1:]
+            irrMf = irr_mass_data[-1,1]
+        except IndexError:
+            Sf = spin_data[1:]
+            irrMf = irr_mass_data[1]
         x.mf = sqrt( irrMf**2 + norm(Sf/irrMf)**2 )
         #
         x.Sf = Sf
