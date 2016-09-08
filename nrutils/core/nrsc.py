@@ -867,9 +867,7 @@ class gwf:
         this.cross  = this.wfarr[:,2]                               # Imaginary part
         this.y      = this.plus + 1j*this.cross                     # Complex waveform
         this.amp    = abs( this.y )                                 # Amplitude
-        # for some modes the junk radiation is larger than the amplitude at merger so we should restrict
-        # to finding peaks after the junk time. For now I am just asuming a t > 200M will sufice.
-        this.t      = this.t - this.t[ argmax(this.amp[this.t > 200]) ]           # Zero t about the waveform's peak
+
 
         phi_    = unwrap( angle( this.y ) )                         # Phase: NOTE, here we make the phase constant where the amplitude is zero
         k = find( (this.amp > 0) * (this.amp<max(this.amp)) )[0]
@@ -1344,6 +1342,10 @@ class gwylm:
         if clean:
             this = this.clean()
 
+        # Create a dictionary representation of the mutlipoles
+        this.lm = {}
+        for k,y in enumerate(this.ylm):
+            this.lm[(y.l,y.m)] = { 'psi4':y, 'strain':this.hlm[k] }
 
     # Validate inputs to constructor
     def __valinputs__(this,thisfun,lm=None,lmax=None,scentry_obj=None):
@@ -1654,7 +1656,7 @@ class gwylm:
         this.wstart = this.starting.left_dphi
         this.startindex = this.starting.left_index
         # Estimate the smallest orbital frequency relevant for this waveform using a PN formula.
-        safety_factor = 0.95
+        safety_factor = 0.90
         this.wstart_pn = safety_factor*2.0*pnw0(this.m1,this.m2,this.b)
 
     # Clean the time domain waveform by removing junk radiation.
