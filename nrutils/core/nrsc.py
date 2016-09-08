@@ -868,7 +868,6 @@ class gwf:
         this.y      = this.plus + 1j*this.cross                     # Complex waveform
         this.amp    = abs( this.y )                                 # Amplitude
 
-
         phi_    = unwrap( angle( this.y ) )                         # Phase: NOTE, here we make the phase constant where the amplitude is zero
         k = find( (this.amp > 0) * (this.amp<max(this.amp)) )[0]
         phi_[0:k] = phi_[k]
